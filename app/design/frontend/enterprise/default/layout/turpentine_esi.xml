@@ -24,15 +24,17 @@
         not be specified in the layout
     -->
     <default>
-     
-        <!-- Override base reference for EE stores to prevent errors -->
-        <reference name="cart_sidebar">
+        <!-- Override to get headers workign on EE -->
+        <reference name="header">
             <action method="setEsiOptions">
                 <params>
-                    <access>public</access>                    
+                    <cacheType>per-client</cacheType>
+                    <registry_keys>
+                         <current_category/>
+                    </registry_keys>
                 </params>
             </action>
-        </reference>        
+        </reference>          
     </default>
     
 </layout>
