@@ -34,6 +34,8 @@ if [ -z "$SITEMAP_URL" ]; then
 Usage: $0 <sitemap URL>
 
     Warm Magento's cache by visiting the URLs in Magento's sitemap
+    
+    Requires curl, Perl-XML-Xpath, siege and sort utilities.
 
     Example:
         $0 http://example.com/magento/sitemap.xml
@@ -47,19 +49,16 @@ echo "Getting URLs from sitemap..."
 curl -ks "$SITEMAP_URL" | \
 	$XPATH_BIN '/urlset/url/loc/text()' 2>/dev/null | \
 	sed -r 's~http(s)?:~\nhttp\1:~g' | \
-    grep -vE '^\s*$' > "$TMP_URL_FILE"
+    grep -vE '^\s*$' | \
+    sort -R > "$TMP_URL_FILE"
 
 echo "Warming $(cat $TMP_URL_FILE | wc -l) URLs using $PROCS processes..."
 
-cat "$TMP_URL_FILE" | \
-    xargs -P "$PROCS" -r -n 1 -- \
-        siege -b -v -c 1 -r once 2>/dev/null | \
-    sed -r 's/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g' | \
-    grep -E '^HTTP'
-cat "$TMP_URL_FILE" | \
-    xargs -P "$PROCS" -r -n 1 -- \
-        siege -H 'Accept-Encoding: gzip' -b -v -c 1 -r once 2>/dev/null | \
-    sed -r 's/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g' | \
-    grep -E '^HTTP'
+        siege -b -v -i -c 5 -r once -f "$TMP_URL_FILE"
+#cat "$TMP_URL_FILE" | \
+#    xargs -P "$PROCS" -r -n 1 -- \
+#        siege -H 'Accept-Encoding: gzip' -b -v -c 1 -r once 2>/dev/null | \
+#    sed -r 's/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g' | \
+#    grep -E '^HTTP'
 
 rm -f "$TMP_URL_FILE"
